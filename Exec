@@ -1,0 +1,21 @@
+let
+    BaseUrl = "https://sonar.xxxx.xxx",
+    RelPath = "api/projects/search",
+    EntitiesPerPage = 500,
+
+    GetJson = (Url) =>
+        let options = [RelativePath=RelPath, Headers =[#"Content-type"="application/json"]],
+            RawData = Web.Contents(Url, options),
+            Json    = Json.Document(RawData)
+        in  Json,
+
+    Url   = BaseUrl,
+    Json  = GetJson(Url),
+    components = Json[components],
+    #"Converti en table" = Table.FromList(components, Splitter.SplitByNothing(), null, null, ExtraValues.Error),
+    #"Column1 développé" = Table.ExpandRecordColumn(#"Converti en table", "Column1", {"organization", "key", "name", "qualifier", "visibility", "lastAnalysisDate", "revision"}, {"Column1.organization", "Column1.key", "Column1.name", "Column1.qualifier", "Column1.visibility", "Column1.lastAnalysisDate", "Column1.revision"}),
+    #"Colonnes supprimées" = Table.RemoveColumns(#"Column1 développé",{"Column1.organization", "Column1.qualifier", "Column1.visibility", "Column1.lastAnalysisDate", "Column1.revision"}),
+    #"Colonnes renommées" = Table.RenameColumns(#"Colonnes supprimées",{{"Column1.key", "key"}, {"Column1.name", "name"}}),
+    #"Lignes triées" = Table.Sort(#"Colonnes renommées",{{"key", Order.Ascending}})
+in
+    #"Lignes triées"
